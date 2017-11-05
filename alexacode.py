@@ -131,7 +131,6 @@ def get_channel_info(intent, session, slack_app):
     '''
    session_attributes = {}
    reprompt_text = None
-   
    #get the list of channels
    channels = slack_app.list_channels()
    channel_data = (', ').join(channels) if channels.keys() else " there are no channels "
