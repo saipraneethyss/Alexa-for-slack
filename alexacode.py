@@ -1,5 +1,6 @@
 """
-This is custom skill designed for Alexa to post data and get content from Slack
+This is custom skill designed for Alexa to post data and get content from Slack. It takes the message and channel name as input for posting data and channel name
+to retrieve data
 """
 
 from __future__ import print_function
@@ -44,13 +45,12 @@ def get_welcome_response():
     """
 
     session_attributes = {}
-    card_title = "Welcome"
-    speech_output = "Connected to your slack account"\
-                    "you can say post to my slack or get messages from slack"
+    card_title = "Welcome!!"
+    speech_output = "You are now connected to your slack account. "\
+                    "You can post messages in your slack and get recent messages."
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
-    reprompt_text = "Please tell me your favorite color by saying, " \
-                    "my favorite color is red."
+    reprompt_text = "Please post a message or retrieve messages from your slack"
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
@@ -58,7 +58,7 @@ def get_welcome_response():
 
 def handle_session_end_request():
     card_title = "Session Ended"
-    speech_output = "Thank you for trying the Alexa Skills Kit sample. " \
+    speech_output = "Thank you for trying Slack Integration with Alexa. " \
                     "Have a nice day! "
     # Setting this to true ends the session and exits the skill.
     should_end_session = True
@@ -67,7 +67,7 @@ def handle_session_end_request():
 
 
 
-def postToSlack(intent, session):
+def post_to_slack(intent, session):
     """ Sets the color in the session and prepares the speech to reply to the
     user.
     """
@@ -78,19 +78,12 @@ def postToSlack(intent, session):
 
     if 'txt' in intent['slots']:
         messageToSlack = intent['slots']['txt']['value']
-        session_attributes = slack.postOnSlackfromAlexa(messageToSlack)
+        session_attributes = slack.post_on_slack_from_alexa(messageToSlack)
         speech_output = "Your message has been posted successfully"
-        reprompt_text = "try again"
-    #                     ". You can ask me your favorite color by saying, " \
-    #                     "what's my favorite color?"
-    #     reprompt_text = "You can ask me your favorite color by saying, " \
-    #                     "what's my favorite color?"
-    # else:
-    #     speech_output = "I'm not sure what your favorite color is. " \
-    #                     "Please try again."
-    #     reprompt_text = "I'm not sure what your favorite color is. " \
-    #                     "You can tell me your favorite color by saying, " \
-    #                     "my favorite color is red."
+        reprompt_text = "Please try again"
+    else:
+        speech_output = "I'm not sure what what you want to do. You say post to myslack or get information from myslack."
+        reprompt_text = "I'm not sure what what you want to do. You say post to myslack or get information from myslack."
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
@@ -101,7 +94,7 @@ def get_from_slack(intent, session):
    channel = "C7V6G1UE9"
    count_val = 4
    messages = slack.get_messages(channel,count_val)
-   message_data = ('').join(messages) if messages else "nothing here"
+   message_data = ('').join(messages) if messages else "There are no messages in this channel"
    reprompt_text = "Try again to read messages"
    should_end_session = False
    # Setting reprompt_text to None signifies that we do not want to reprompt
@@ -143,7 +136,7 @@ def on_intent(intent_request, session):
 
     # Dispatch to your skill's intent handlers
     if intent_name == "postToSlack":
-        return postToSlack(intent, session)
+        return post_to_slack(intent, session)
     elif intent_name == "getFromSlack":
         return get_from_slack(intent, session)
     elif intent_name == "AMAZON.HelpIntent":
