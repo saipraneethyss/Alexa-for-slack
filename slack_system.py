@@ -4,31 +4,41 @@ import requests
 from slackclient import SlackClient as slack
 
 
-#enter the input text\
-# input_text = input()
+
+class slack_account:
+
+	def __init__(self):
+		client_token = "xoxp-266423738560-266561351921-268049892342-bba7f7059297b5171a7a855f21de442c"
+		self.slack_client = slack(client_token)
+
+	def post_on_slack(self,data,channel_to_post):
+		self.slack_client.api_call("chat.postMessage",channel = channel_to_post, text = data)
+
+
+	def get_from_slack(self,channel_id):
+		messages = self.slack_client.api_call("channels.history",channel= channel_id)
+		count = len(messages.get('messages')) if len(messages.get('messages'))<=3 else 3
+		if messages.get('messages'):
+			new_messages = [message.get('text') for iteration,message in enumerate(messages.get('messages')) 
+							if iteration<count and 'has joined the channel' not in message.get('text')]
+			return new_messages
+		else:
+			return None
+
+	def list_channels(self):
+		channels_list = {}
+		for channel in self.slack_client.api_call("channels.list").get('channels'):
+			channels_list[channel.get('name')] = channel.get('id')
+			# print(channels_list)
+		return channels_list
 
 
 
+# #testing
+# slack_app = slack_account()
+# # slack_app.post_on_slack(input(),)
 
-# client_key = "3e92dfca62f0e21d2d19613d3b45f7a8"
-# client_id = "266423738560.266425477648"
-# client_token = "D0YOuhtpPaq2r36msc4TvZse"
-def postOnSlackfromAlexa(data):
-	client_token = "xoxp-266423738560-266561351921-268041547894-8f6f92024f9ed5a875360078d4bfa9cb"
-
-	sc = slack(client_token)
-	sc.api_call("chat.postMessage",channel = "#kronusposts", text = data)
-
-#LIST CHANNELS
-# for channel in sc.api_call("channels.list").get('channels'):
-# 	print("channel name: ", channel.get('name'), " channel id: ", channel.get('id'))
-# 	print("\n")
-
-#channels_list = js.loads(sc.api_call("channels.list"))
-
-def get_messages(channel_id,count_val):
-	client_token = "xoxp-266423738560-266561351921-268041547894-8f6f92024f9ed5a875360078d4bfa9cb"
-	sc = slack(client_token)
-	messages = sc.api_call("channels.history",channel= channel_id,count=count_val)#"C7V6G1UE9")
-	new_messages = [message.get('text') for message in messages.get('messages')]
-	return str(new_messages)
+# for key,value in slack_app.list_channels().items():
+# 	print("current messages from channel: "+key)
+# 	print(slack_app.get_from_slack(value))
+# 	print('\n')

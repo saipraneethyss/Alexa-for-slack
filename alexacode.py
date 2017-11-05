@@ -38,6 +38,16 @@ def build_response(session_attributes, speechlet_response):
 
 # --------------- Functions that control the skill's behavior ------------------
 
+def channel_in_context(intent,slack_app):
+    list_of_channels_in_slack = slack_app.list_channels() #returns dict of channels; key= name , value = channel Id
+    if 'channel' in intent['slots'] and intent['slots']['channel']['value'] in list_of_channels_in_slack.keys():
+        channel_to_post = list_of_channels_in_slack[intent['slots']['channel']['value']]
+    else:
+        channel_to_post = list_of_channels_in_slack['general']
+    return channel_to_post
+
+
+
 def get_welcome_response():
     """ If we wanted to initialize the session to have some attributes we could
     add those here
@@ -67,7 +77,7 @@ def handle_session_end_request():
 
 
 
-def postToSlack(intent, session):
+def postToSlack(intent, session, slack_app):
     """ Sets the color in the session and prepares the speech to reply to the
     user.
     """
@@ -76,37 +86,26 @@ def postToSlack(intent, session):
     session_attributes = {}
     should_end_session = False
 
+
     if 'txt' in intent['slots']:
         messageToSlack = intent['slots']['txt']['value']
-        session_attributes = slack.postOnSlackfromAlexa(messageToSlack)
+        session_attributes = slack_app.post_on_slack(messageToSlack,channel_in_context(intent,slack_app))
         speech_output = "Your message has been posted successfully"
         reprompt_text = "try again"
-    #                     ". You can ask me your favorite color by saying, " \
-    #                     "what's my favorite color?"
-    #     reprompt_text = "You can ask me your favorite color by saying, " \
-    #                     "what's my favorite color?"
-    # else:
-    #     speech_output = "I'm not sure what your favorite color is. " \
-    #                     "Please try again."
-    #     reprompt_text = "I'm not sure what your favorite color is. " \
-    #                     "You can tell me your favorite color by saying, " \
-    #                     "my favorite color is red."
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
-def get_from_slack(intent, session):
+
+
+def get_from_slack(intent, session, slack_app):
    session_attributes = {}
    reprompt_text = None
    #define the channel for commiunication
-   channel = "C7V6G1UE9"
-   count_val = 4
-   messages = slack.get_messages(channel,count_val)
-   message_data = ('').join(messages) if messages else "nothing here"
+   messages = slack_app.get_messages(channel_in_context(intent,slack_app))
+   message_data = ('').join(messages) if messages else "Currently there are no meesages in this channel "
    reprompt_text = "Try again to read messages"
    should_end_session = False
-   # Setting reprompt_text to None signifies that we do not want to reprompt
-   # the user. If the user does not respond or says something that is not
-   # understood, the session will end.
+   
    return build_response(session_attributes, build_speechlet_response(
        intent['name'], message_data, reprompt_text, should_end_session))
 
@@ -140,12 +139,13 @@ def on_intent(intent_request, session):
 
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
+    slack_app = slack.slack_account()
 
     # Dispatch to your skill's intent handlers
     if intent_name == "postToSlack":
-        return postToSlack(intent, session)
+        return postToSlack(intent, session,slack_app)
     elif intent_name == "getFromSlack":
-        return get_from_slack(intent, session)
+        return get_from_slack(intent, session,slack_app)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
@@ -181,6 +181,7 @@ def lambda_handler(event, context):
     # if (event['session']['application']['applicationId'] !=
     #         "amzn1.echo-sdk-ams.app.[unique-value-here]"):
     #     raise ValueError("Invalid Application ID")
+
 
     if event['session']['new']:
         on_session_started({'requestId': event['request']['requestId']},
