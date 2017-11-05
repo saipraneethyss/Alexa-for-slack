@@ -63,3 +63,6 @@ Login to the Lambda service and create a function with Alexa Skil Sets as `Trigg
 *  create a deployment package for all the files in the model. (Note: All the required dependencies are included here)
 *  upload the obtained zip file to the function under `Code entry type`
 *  Set the `Handler` to "alexacode.lambda_handler"
+
+#### Note ####: 
+Currently, the app reads only upto 3 latest messages. This can be altered [here](https://github.com/saipraneethyss/Alexa-for-slack/blob/643631438ecae823011c78b78b6956e0db333d2b/slack_system.py#L28)
