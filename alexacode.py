@@ -39,29 +39,38 @@ def build_response(session_attributes, speechlet_response):
 # --------------- Functions that control the skill's behavior ------------------
 
 def channel_in_context(intent,slack_app):
-    list_of_channels_in_slack = slack_app.list_channels() #returns dict of channels; key= name , value = channel Id
+    '''
+        this method returns the channel from which messages are read from or posted to to. By default, the general channel
+        is returned else returns the specific channel mentioned in the text input
+    '''
+    #returns dict of channels; key= name , value = channel Id
+    list_of_channels_in_slack = slack_app.list_channels() 
+    
+    channel_to_post = list_of_channels_in_slack['general']
     if 'channel' in intent['slots'] and 'value' in intent['slots']['channel'].keys() :
         if intent['slots']['channel']['value'] in list_of_channels_in_slack.keys():
             channel_to_post = list_of_channels_in_slack[intent['slots']['channel']['value']]
-    else:
-        channel_to_post = list_of_channels_in_slack['general']
+    
     return channel_to_post
 
 
 
 def get_welcome_response():
     """ If we wanted to initialize the session to have some attributes we could
-    add those here
+    add those heres
     """
 
     session_attributes = {}
     card_title = "Welcome"
     speech_output = "Connected to your slack account"\
-                    " you can say post to my slack or get messages from slack"
+                    " you can say, post to my slack or, get messages from slack "\
+                    " or, list channels in my slack account."
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
-    reprompt_text = "Please tell me your favorite color by saying, " \
-                    "my favorite color is red."
+    reprompt_text = "Please tell me your choice. "\
+                     " you can say, post to my slack or, get messages from slack "\
+                    " or, list channels in my slack account."
+
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
@@ -69,7 +78,7 @@ def get_welcome_response():
 
 def handle_session_end_request():
     card_title = "Session Ended"
-    speech_output = "Thank you for trying the Alexa Skills Kit sample. " \
+    speech_output = "Thank you for trying the Alexa for slack app " \
                     "Have a nice day! "
     # Setting this to true ends the session and exits the skill.
     should_end_session = True
@@ -79,31 +88,36 @@ def handle_session_end_request():
 
 
 def post_to_slack(intent, session, slack_app):
-    """ Sets the color in the session and prepares the speech to reply to the
-    user.
+    """ 
+        This method posts the message contents to the specified slack channel. Default channel - general
     """
 
     card_title = intent['name']
     session_attributes = {}
     should_end_session = False
 
-
+    #check for the custom text
     if 'txt' in intent['slots']:
         messageToSlack = intent['slots']['txt']['value']
         session_attributes = slack_app.post_on_slack(messageToSlack,channel_in_context(intent,slack_app))
         speech_output = "Your message has been posted successfully"
-        reprompt_text = "try again"
+        reprompt_text = "please try again to post the message to your slack account"
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
 
 
 def get_from_slack(intent, session, slack_app):
+    '''
+        this method returns the responses/messages posted in the specified slack channel. Default channel - general
+    '''
    session_attributes = {}
    reprompt_text = None
-   #define the channel for commiunication
+   #define the channel for communication
    messages = slack_app.get_from_slack(channel_in_context(intent,slack_app))
-   message_data = ('').join(messages) if messages else "Currently there are no meesages in this channel "
+
+   #retrive the messages
+   message_data = (', ').join(messages) if messages else "Currently there are no meesages in this channel "
    reprompt_text = "Try again to read messages"
    should_end_session = False
    
@@ -112,11 +126,14 @@ def get_from_slack(intent, session, slack_app):
 
 
 def get_channel_info(intent, session, slack_app):
+    '''
+        this method returns the list of channels available on slack
+    '''
    session_attributes = {}
    reprompt_text = None
-   #get list of channels
+   #get the list of channels
    channels = slack_app.list_channels()
-   channel_data = ('').join(channels) if channels.keys() else " there are no channels "
+   channel_data = (', ').join(channels) if channels.keys() else " there are no channels "
    reprompt_text = "Try again to read messages"
    should_end_session = False
    
@@ -141,7 +158,7 @@ def on_launch(launch_request, session):
 
     print("on_launch requestId=" + launch_request['requestId'] +
           ", sessionId=" + session['sessionId'])
-    # Dispatch to skill's launch
+    # Dispatch to Alexa for Slack skill's launch
     return get_welcome_response()
 
 
@@ -153,15 +170,20 @@ def on_intent(intent_request, session):
 
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
-    slack_app = slack.slack_account()
 
-    # Dispatch to your skill's intent handlers
+    #obtain the token - work around for now using test token
+    token= "xoxp-266423738560-266561351921-268280166855-7a30e0df9a7406137263ff656b1a0e30"
+
+    #initialize the slack client object using outh 2.0 test token
+    slack_app = slack.slack_account(token)
+
+    # Dispatch to  skill's intent handlers
     if intent_name == "postToSlack":
         return post_to_slack(intent, session,slack_app)
     elif intent_name == "getFromSlack":
         return get_from_slack(intent, session,slack_app)
     elif intent_name == "getChannelNames":
-        return slack_app.list_channels()
+        return get_channel_info(intent,session,slack_app)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
@@ -187,16 +209,6 @@ def lambda_handler(event, context):
     """
     print("event.session.application.applicationId=" +
           event['session']['application']['applicationId'])
-
-    """
-    Uncomment this if statement and populate with your skill's application ID to
-    prevent someone else from configuring a skill that sends requests to this
-    function.
-    """
-    # if (event['session']['application']['applicationId'] !=
-    #         "amzn1.echo-sdk-ams.app.[unique-value-here]"):
-    #     raise ValueError("Invalid Application ID")
-
 
     if event['session']['new']:
         on_session_started({'requestId': event['request']['requestId']},
