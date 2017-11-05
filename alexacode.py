@@ -114,7 +114,7 @@ def get_from_slack(intent, session, slack_app):
 def get_channel_info(intent, session, slack_app):
    session_attributes = {}
    reprompt_text = None
-   #define the channel for commiunication
+   #get list of channels
    channels = slack_app.list_channels()
    channel_data = ('').join(channels) if channels.keys() else " there are no channels "
    reprompt_text = "Try again to read messages"
@@ -141,7 +141,7 @@ def on_launch(launch_request, session):
 
     print("on_launch requestId=" + launch_request['requestId'] +
           ", sessionId=" + session['sessionId'])
-    # Dispatch to your skill's launch
+    # Dispatch to skill's launch
     return get_welcome_response()
 
 
@@ -177,7 +177,6 @@ def on_session_ended(session_ended_request, session):
     """
     print("on_session_ended requestId=" + session_ended_request['requestId'] +
           ", sessionId=" + session['sessionId'])
-    # add cleanup logic here
 
 
 # --------------- Main handler ------------------
