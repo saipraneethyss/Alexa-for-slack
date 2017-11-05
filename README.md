@@ -54,4 +54,12 @@ Create a new [Alexa Skill](https://developer.amazon.com/alexa-skills-kit) and pr
 
 ```
 
-Login to the Lambda service and create a function with Alexa Skil Sets as `Trigger Point`. Copy the ARN. 
+define the custom slot : "LIST_OF_CHANNELS" as follows:
+'general | random'
+
+
+
+Login to the Lambda service and create a function with Alexa Skil Sets as `Trigger Point`. Copy the ARN and paste it as the endpoint service. In the lambda function:
+*  create a deployment package for all the files in the model. (Note: All the required dependencies are included here)
+*  upload the obtained zip file to the function under `Code entry type`
+*  Set the `Handler` to "alexacode.lambda_handler"
