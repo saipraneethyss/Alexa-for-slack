@@ -40,24 +40,25 @@ def build_response(session_attributes, speechlet_response):
 
 def channel_in_context(intent,slack_app):
     list_of_channels_in_slack = slack_app.list_channels() #returns dict of channels; key= name , value = channel Id
+    channel_to_post = list_of_channels_in_slack['general']
     if 'channel' in intent['slots'] and 'value' in intent['slots']['channel'].keys() :
         if intent['slots']['channel']['value'] in list_of_channels_in_slack.keys():
             channel_to_post = list_of_channels_in_slack[intent['slots']['channel']['value']]
-    else:
-        channel_to_post = list_of_channels_in_slack['general']
+    
     return channel_to_post
 
 
 
 def get_welcome_response():
     """ If we wanted to initialize the session to have some attributes we could
-    add those here
+    add those heres
     """
 
     session_attributes = {}
     card_title = "Welcome"
     speech_output = "Connected to your slack account"\
-                    " you can say post to my slack or get messages from slack"
+                    " you can say post to my slack or get messages from slack "\
+                    " or, list channels in my slack account."
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
     reprompt_text = "Please tell me your favorite color by saying, " \
@@ -103,7 +104,7 @@ def get_from_slack(intent, session, slack_app):
    reprompt_text = None
    #define the channel for commiunication
    messages = slack_app.get_from_slack(channel_in_context(intent,slack_app))
-   message_data = ('').join(messages) if messages else "Currently there are no meesages in this channel "
+   message_data = (', ').join(messages) if messages else "Currently there are no meesages in this channel "
    reprompt_text = "Try again to read messages"
    should_end_session = False
    
@@ -116,7 +117,7 @@ def get_channel_info(intent, session, slack_app):
    reprompt_text = None
    #define the channel for commiunication
    channels = slack_app.list_channels()
-   channel_data = ('').join(channels) if channels.keys() else " there are no channels "
+   channel_data = (', ').join(channels) if channels.keys() else " there are no channels "
    reprompt_text = "Try again to read messages"
    should_end_session = False
    
@@ -153,7 +154,8 @@ def on_intent(intent_request, session):
 
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
-    slack_app = slack.slack_account()
+    token= "xoxp-266423738560-266561351921-268280166855-7a30e0df9a7406137263ff656b1a0e30"
+    slack_app = slack.slack_account(token)
 
     # Dispatch to your skill's intent handlers
     if intent_name == "postToSlack":
@@ -161,7 +163,7 @@ def on_intent(intent_request, session):
     elif intent_name == "getFromSlack":
         return get_from_slack(intent, session,slack_app)
     elif intent_name == "getChannelNames":
-        return slack_app.list_channels()
+        return get_channel_info(intent,session,slack_app)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":

@@ -7,8 +7,7 @@ from slackclient import SlackClient as slack
 
 class slack_account:
 
-	def __init__(self):
-		client_token = "xoxp-266423738560-266561351921-268049892342-bba7f7059297b5171a7a855f21de442c"
+	def __init__(self,client_token):
 		self.slack_client = slack(client_token)
 
 	def post_on_slack(self,data,channel_to_post):
