@@ -1,14 +1,9 @@
 """
-This sample demonstrates a simple skill built with the Amazon Alexa Skills Kit.
-The Intent Schema, Custom Slots, and Sample Utterances for this skill, as well
-as testing instructions are located at http://amzn.to/1LzFrj6
-
-For additional samples, visit the Alexa Skills Kit Getting Started guide at
-http://amzn.to/1LGWsLG
+This is custom skill designed for Alexa to post data and get content from Slack
 """
 
 from __future__ import print_function
-
+import slack_system as slack
 
 # --------------- Helpers that build all of the responses ----------------------
 
@@ -50,9 +45,8 @@ def get_welcome_response():
 
     session_attributes = {}
     card_title = "Welcome"
-    speech_output = "Welcome to the Alexa Skills Kit sample. " \
-                    "Please tell me your favorite color by saying, " \
-                    "my favorite color is red"
+    speech_output = "Connected to your slack account"\
+                    "you can say post to my slack or get messages from slack"
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
     reprompt_text = "Please tell me your favorite color by saying, " \
@@ -72,11 +66,8 @@ def handle_session_end_request():
         card_title, speech_output, None, should_end_session))
 
 
-def create_favorite_color_attributes(favorite_color):
-    return {"favoriteColor": favorite_color}
 
-
-def set_color_in_session(intent, session):
+def postToSlack(intent, session):
     """ Sets the color in the session and prepares the speech to reply to the
     user.
     """
@@ -85,44 +76,40 @@ def set_color_in_session(intent, session):
     session_attributes = {}
     should_end_session = False
 
-    if 'Color' in intent['slots']:
-        favorite_color = intent['slots']['Color']['value']
-        session_attributes = create_favorite_color_attributes(favorite_color)
-        speech_output = "I now know your favorite color is " + \
-                        favorite_color + \
-                        ". You can ask me your favorite color by saying, " \
-                        "what's my favorite color?"
-        reprompt_text = "You can ask me your favorite color by saying, " \
-                        "what's my favorite color?"
-    else:
-        speech_output = "I'm not sure what your favorite color is. " \
-                        "Please try again."
-        reprompt_text = "I'm not sure what your favorite color is. " \
-                        "You can tell me your favorite color by saying, " \
-                        "my favorite color is red."
+    if 'txt' in intent['slots']:
+        messageToSlack = intent['slots']['txt']['value']
+        session_attributes = slack.postOnSlackfromAlexa(messageToSlack)
+        speech_output = "Your message has been posted successfully"
+        reprompt_text = "try again"
+    #                     ". You can ask me your favorite color by saying, " \
+    #                     "what's my favorite color?"
+    #     reprompt_text = "You can ask me your favorite color by saying, " \
+    #                     "what's my favorite color?"
+    # else:
+    #     speech_output = "I'm not sure what your favorite color is. " \
+    #                     "Please try again."
+    #     reprompt_text = "I'm not sure what your favorite color is. " \
+    #                     "You can tell me your favorite color by saying, " \
+    #                     "my favorite color is red."
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
+def get_from_slack(intent, session):
+   session_attributes = {}
+   reprompt_text = None
+   #define the channel for commiunication
+   channel = "C7V6G1UE9"
+   count_val = 4
+   messages = slack.get_messages(channel,count_val)
+   message_data = ('').join(messages) if messages else "nothing here"
+   reprompt_text = "Try again to read messages"
+   should_end_session = False
+   # Setting reprompt_text to None signifies that we do not want to reprompt
+   # the user. If the user does not respond or says something that is not
+   # understood, the session will end.
+   return build_response(session_attributes, build_speechlet_response(
+       intent['name'], message_data, reprompt_text, should_end_session))
 
-def get_color_from_session(intent, session):
-    session_attributes = {}
-    reprompt_text = None
-
-    if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
-        favorite_color = session['attributes']['favoriteColor']
-        speech_output = "Your favorite color is " + favorite_color + \
-                        ". Goodbye."
-        should_end_session = True
-    else:
-        speech_output = "I'm not sure what your favorite color is. " \
-                        "You can say, my favorite color is red."
-        should_end_session = False
-
-    # Setting reprompt_text to None signifies that we do not want to reprompt
-    # the user. If the user does not respond or says something that is not
-    # understood, the session will end.
-    return build_response(session_attributes, build_speechlet_response(
-        intent['name'], speech_output, reprompt_text, should_end_session))
 
 
 # --------------- Events ------------------
@@ -155,10 +142,10 @@ def on_intent(intent_request, session):
     intent_name = intent_request['intent']['name']
 
     # Dispatch to your skill's intent handlers
-    if intent_name == "MyColorIsIntent":
-        return set_color_in_session(intent, session)
-    elif intent_name == "WhatsMyColorIntent":
-        return get_color_from_session(intent, session)
+    if intent_name == "postToSlack":
+        return postToSlack(intent, session)
+    elif intent_name == "getFromSlack":
+        return get_from_slack(intent, session)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
